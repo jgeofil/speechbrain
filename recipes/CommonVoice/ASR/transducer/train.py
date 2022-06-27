@@ -58,9 +58,8 @@ class ASR(sb.Brain):
         feats = self.modules.normalize(feats, wav_lens)
 
         # Add augmentation if specified
-        if stage == sb.Stage.TRAIN:
-            if hasattr(self.modules, "augmentation"):
-                feats = self.modules.augmentation(feats)
+        if stage == sb.Stage.TRAIN and hasattr(self.modules, "augmentation"):
+            feats = self.modules.augmentation(feats)
 
         x = self.modules.enc(feats.detach())
         e_in = self.modules.emb(tokens_with_bos)
@@ -313,10 +312,10 @@ def dataio_prepare(hparams, tokenizer):
     def audio_pipeline(wav):
         info = torchaudio.info(wav)
         sig = sb.dataio.dataio.read_audio(wav)
-        resampled = torchaudio.transforms.Resample(
-            info.sample_rate, hparams["sample_rate"],
+        return torchaudio.transforms.Resample(
+            info.sample_rate,
+            hparams["sample_rate"],
         )(sig)
-        return resampled
 
     sb.dataio.dataset.add_dynamic_item(datasets, audio_pipeline)
 
@@ -329,12 +328,9 @@ def dataio_prepare(hparams, tokenizer):
         yield wrd
         tokens_list = tokenizer.sp.encode_as_ids(wrd)
         yield tokens_list
-        tokens_bos = torch.LongTensor([hparams["blank_index"]] + (tokens_list))
-        yield tokens_bos
-        tokens_eos = torch.LongTensor(tokens_list + [hparams["blank_index"]])
-        yield tokens_eos
-        tokens = torch.LongTensor(tokens_list)
-        yield tokens
+        yield torch.LongTensor([hparams["blank_index"]] + (tokens_list))
+        yield torch.LongTensor(tokens_list + [hparams["blank_index"]])
+        yield torch.LongTensor(tokens_list)
 
     sb.dataio.dataset.add_dynamic_item(datasets, text_pipeline)
 

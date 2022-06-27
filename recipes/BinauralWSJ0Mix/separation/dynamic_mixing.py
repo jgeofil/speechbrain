@@ -52,7 +52,7 @@ def dynamic_mix_data_prep(hparams):
     )
     def audio_pipeline(
         mix_wav,
-    ):  # this is dummy --> it means one epoch will be same as without dynamic mixing
+    ):    # this is dummy --> it means one epoch will be same as without dynamic mixing
         """
         This audio pipeline defines the compute graph for dynamic mixing
         """
@@ -122,10 +122,9 @@ def dynamic_mix_data_prep(hparams):
 
                 hrtf_file = os.path.join(
                     subject_path,
-                    "{}az{}.wav".format(
-                        azimuth.astype("str").replace("-", "neg"), loc
-                    ),
+                    f'{azimuth.astype("str").replace("-", "neg")}az{loc}.wav',
                 )
+
                 hrtf, sr = torchaudio.load(hrtf_file)
                 transform = torchaudio.transforms.Resample(sr, fs_read)
                 hrtf = transform(hrtf[:, np.random.randint(50)])
@@ -164,9 +163,7 @@ def dynamic_mix_data_prep(hparams):
         )
         mix_scaling = 1 / max_amp * 0.9
         sources = mix_scaling * sources
-        mixture = mix_scaling * mixture
-
-        yield mixture
+        yield mix_scaling * mixture
         for i in range(hparams["num_spks"]):
             yield sources[i]
 
@@ -177,8 +174,7 @@ def dynamic_mix_data_prep(hparams):
         if "wham" in Path(hparams["data_folder"]).stem:
             mean_source_lvl = sources.abs().mean()
             mean_noise_lvl = noise.abs().mean()
-            noise = (mean_source_lvl / mean_noise_lvl) * noise
-            yield noise
+            yield (mean_source_lvl / mean_noise_lvl) * noise
         else:
             yield None
 

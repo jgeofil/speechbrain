@@ -221,8 +221,7 @@ def dataio_prep(hparams):
     @sb.utils.data_pipeline.provides("language", "language_encoded")
     def label_pipeline(language):
         yield language
-        language_encoded = language_encoder.encode_label_torch(language)
-        yield language_encoded
+        yield language_encoder.encode_label_torch(language)
 
     # Define datasets. We also connect the dataset with the data processing
     # functions defined above.

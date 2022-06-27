@@ -239,11 +239,10 @@ def dataio_prepare(hparams):
         sig = sb.dataio.dataio.read_audio(wav)
         if info.num_channels > 1:
             sig = torch.mean(sig, dim=1)
-        resampled = torchaudio.transforms.Resample(
-            info.sample_rate, hparams["sample_rate"],
+        return torchaudio.transforms.Resample(
+            info.sample_rate,
+            hparams["sample_rate"],
         )(sig)
-
-        return resampled
 
     sb.dataio.dataset.add_dynamic_item(datasets, audio_pipeline)
 

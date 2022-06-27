@@ -33,9 +33,8 @@ class ASR(sb.Brain):
         wavs, wav_lens = batch.sig
         phns_bos, _ = batch.phn_encoded_bos
 
-        if stage == sb.Stage.TRAIN:
-            if hasattr(self.hparams, "augmentation"):
-                wavs = self.hparams.augmentation(wavs, wav_lens)
+        if stage == sb.Stage.TRAIN and hasattr(self.hparams, "augmentation"):
+            wavs = self.hparams.augmentation(wavs, wav_lens)
 
         feats = self.modules.wav2vec2(wavs)
         x = self.modules.enc(feats)
@@ -275,8 +274,7 @@ def dataio_prep(hparams):
     @sb.utils.data_pipeline.takes("wav")
     @sb.utils.data_pipeline.provides("sig")
     def audio_pipeline(wav):
-        sig = sb.dataio.dataio.read_audio(wav)
-        return sig
+        return sb.dataio.dataio.read_audio(wav)
 
     sb.dataio.dataset.add_dynamic_item(datasets, audio_pipeline)
 
@@ -294,16 +292,10 @@ def dataio_prep(hparams):
         yield phn_list
         phn_encoded_list = label_encoder.encode_sequence(phn_list)
         yield phn_encoded_list
-        phn_encoded = torch.LongTensor(phn_encoded_list)
-        yield phn_encoded
-        phn_encoded_eos = torch.LongTensor(
-            label_encoder.append_eos_index(phn_encoded_list)
-        )
-        yield phn_encoded_eos
-        phn_encoded_bos = torch.LongTensor(
-            label_encoder.prepend_bos_index(phn_encoded_list)
-        )
-        yield phn_encoded_bos
+        yield torch.LongTensor(phn_encoded_list)
+        yield torch.LongTensor(label_encoder.append_eos_index(phn_encoded_list))
+
+        yield torch.LongTensor(label_encoder.prepend_bos_index(phn_encoded_list))
 
     sb.dataio.dataset.add_dynamic_item(datasets, text_pipeline)
 

@@ -124,8 +124,9 @@ class VADBrain(sb.Brain):
                 meta={"loss": stage_loss, "summary": summary},
                 num_to_keep=1,
                 min_keys=["loss"],
-                name="epoch_{}".format(epoch),
+                name=f"epoch_{epoch}",
             )
+
 
         elif stage == sb.Stage.TEST:
             self.hparams.train_logger.log_stats(
@@ -156,8 +157,7 @@ def dataio_prep(hparams):
     @sb.utils.data_pipeline.takes("wav")
     @sb.utils.data_pipeline.provides("signal")
     def audio_pipeline(wav):
-        sig = sb.dataio.dataio.read_audio(wav)
-        return sig
+        return sb.dataio.dataio.read_audio(wav)
 
     # 3. Define text pipeline:
     @sb.utils.data_pipeline.takes("speech")

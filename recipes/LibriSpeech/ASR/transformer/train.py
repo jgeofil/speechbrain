@@ -55,21 +55,19 @@ class ASR(sb.core.Brain):
         tokens_bos, _ = batch.tokens_bos
 
         # Add augmentation if specified
-        if stage == sb.Stage.TRAIN:
-            if hasattr(self.modules, "env_corrupt"):
-                wavs_noise = self.modules.env_corrupt(wavs, wav_lens)
-                wavs = torch.cat([wavs, wavs_noise], dim=0)
-                wav_lens = torch.cat([wav_lens, wav_lens])
-                tokens_bos = torch.cat([tokens_bos, tokens_bos], dim=0)
+        if stage == sb.Stage.TRAIN and hasattr(self.modules, "env_corrupt"):
+            wavs_noise = self.modules.env_corrupt(wavs, wav_lens)
+            wavs = torch.cat([wavs, wavs_noise], dim=0)
+            wav_lens = torch.cat([wav_lens, wav_lens])
+            tokens_bos = torch.cat([tokens_bos, tokens_bos], dim=0)
 
         # compute features
         feats = self.hparams.compute_features(wavs)
         current_epoch = self.hparams.epoch_counter.current
         feats = self.modules.normalize(feats, wav_lens, epoch=current_epoch)
 
-        if stage == sb.Stage.TRAIN:
-            if hasattr(self.hparams, "augmentation"):
-                feats = self.hparams.augmentation(feats)
+        if stage == sb.Stage.TRAIN and hasattr(self.hparams, "augmentation"):
+            feats = self.hparams.augmentation(feats)
 
         # forward modules
         src = self.modules.CNN(feats)
@@ -326,8 +324,7 @@ def dataio_prepare(hparams):
     @sb.utils.data_pipeline.takes("wav")
     @sb.utils.data_pipeline.provides("sig")
     def audio_pipeline(wav):
-        sig = sb.dataio.dataio.read_audio(wav)
-        return sig
+        return sb.dataio.dataio.read_audio(wav)
 
     sb.dataio.dataset.add_dynamic_item(valtest_datasets, audio_pipeline)
 
@@ -341,8 +338,9 @@ def dataio_prepare(hparams):
             # factor = np.random.uniform(0.95, 1.05)
             # sig = resample(sig.numpy(), 16000, int(16000*factor))
             speed = sb.processing.speech_augmentation.SpeedPerturb(
-                16000, [x for x in range(95, 105)]
+                16000, list(range(95, 105))
             )
+
             sig = speed(sig.unsqueeze(0)).squeeze(0)  # torch.from_numpy(sig)
         else:
             sig = sb.dataio.dataio.read_audio(wav)
@@ -359,12 +357,9 @@ def dataio_prepare(hparams):
         yield wrd
         tokens_list = tokenizer.encode_as_ids(wrd)
         yield tokens_list
-        tokens_bos = torch.LongTensor([hparams["bos_index"]] + (tokens_list))
-        yield tokens_bos
-        tokens_eos = torch.LongTensor(tokens_list + [hparams["eos_index"]])
-        yield tokens_eos
-        tokens = torch.LongTensor(tokens_list)
-        yield tokens
+        yield torch.LongTensor([hparams["bos_index"]] + (tokens_list))
+        yield torch.LongTensor(tokens_list + [hparams["eos_index"]])
+        yield torch.LongTensor(tokens_list)
 
     sb.dataio.dataset.add_dynamic_item(datasets, text_pipeline)
 
@@ -494,8 +489,9 @@ if __name__ == "__main__":
     # Testing
     for k in test_datasets.keys():  # keys are test_clean, test_other etc
         asr_brain.hparams.wer_file = os.path.join(
-            hparams["output_folder"], "wer_{}.txt".format(k)
+            hparams["output_folder"], f"wer_{k}.txt"
         )
+
         asr_brain.evaluate(
             test_datasets[k],
             max_key="ACC",

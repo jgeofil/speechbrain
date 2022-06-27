@@ -166,11 +166,7 @@ class Separation(sb.Brain):
         mixture = batch.mix_sig
 
         targets = [batch.s1_sig, batch.s2_sig]
-        if self.hparams.use_wham_noise:
-            noise = batch.noise_sig[0]
-        else:
-            noise = None
-
+        noise = batch.noise_sig[0] if self.hparams.use_wham_noise else None
         if self.hparams.num_spks == 3:
             targets.append(batch.s3_sig)
 
@@ -199,10 +195,9 @@ class Separation(sb.Brain):
                 else:
                     self.nonfinite_count += 1
                     logger.info(
-                        "infinite loss or empty loss! it happened {} times so far - skipping this batch".format(
-                            self.nonfinite_count
-                        )
+                        f"infinite loss or empty loss! it happened {self.nonfinite_count} times so far - skipping this batch"
                     )
+
                     loss.data = torch.tensor(0).to(self.device)
 
         else:
@@ -226,10 +221,9 @@ class Separation(sb.Brain):
             else:
                 self.nonfinite_count += 1
                 logger.info(
-                    "infinite loss or empty loss! it happened {} times so far - skipping this batch".format(
-                        self.nonfinite_count
-                    )
+                    f"infinite loss or empty loss! it happened {self.nonfinite_count} times so far - skipping this batch"
                 )
+
                 loss.data = torch.tensor(0).to(self.device)
 
         self.optimizer.zero_grad()
@@ -244,11 +238,7 @@ class Separation(sb.Brain):
         if self.hparams.num_spks == 3:
             targets.append(batch.s3_sig)
 
-        if self.hparams.use_wham_noise:
-            noise = batch.noise_sig[0]
-        else:
-            noise = None
-
+        noise = batch.noise_sig[0] if self.hparams.use_wham_noise else None
         with torch.no_grad():
             predictions, snrhat, snr, snr_compressed = self.compute_forward(
                 mixture, targets, sb.Stage.VALID, noise
@@ -313,11 +303,8 @@ class Separation(sb.Brain):
                     targets[:, :, i], targ_lens
                 )
                 new_targets.append(new_target)
-                if i == 0:
+                if i != 0 and new_target.shape[-1] < min_len or i == 0:
                     min_len = new_target.shape[-1]
-                else:
-                    if new_target.shape[-1] < min_len:
-                        min_len = new_target.shape[-1]
 
             if self.hparams.use_rand_shift:
                 # Performing random_shift (independently on each source)
@@ -399,8 +386,7 @@ class Separation(sb.Brain):
 
             # Loop over all test sentence
             with tqdm(test_loader, dynamic_ncols=True) as t:
-                for i, batch in enumerate(t):
-
+                for batch in t:
                     # Apply Separation
                     mixture = batch.mix_sig
                     snt_id = batch.id
@@ -408,11 +394,7 @@ class Separation(sb.Brain):
                     if self.hparams.num_spks == 3:
                         targets.append(batch.s3_sig)
 
-                    if self.hparams.use_wham_noise:
-                        noise = batch.noise_sig[0]
-                    else:
-                        noise = None
-
+                    noise = batch.noise_sig[0] if self.hparams.use_wham_noise else None
                     with torch.no_grad():
                         (
                             predictions,
@@ -451,21 +433,14 @@ class Separation(sb.Brain):
                 }
                 writer.writerow(row)
 
+        logger.info(f"Mean SISNR for source 1 is {np.array(all_sisnr1s).mean()}")
         logger.info(
-            "Mean SISNR for source 1 is {}".format(np.array(all_sisnr1s).mean())
+            f"Mean SISNR hat for source 1 is {np.array(all_sisnr1_hats).mean()}"
         )
+
+        logger.info(f"Mean SISNR for source 2 is {np.array(all_sisnr2s).mean()}")
         logger.info(
-            "Mean SISNR hat for source 1 is {}".format(
-                np.array(all_sisnr1_hats).mean()
-            )
-        )
-        logger.info(
-            "Mean SISNR for source 2 is {}".format(np.array(all_sisnr2s).mean())
-        )
-        logger.info(
-            "Mean SISNR hat for source 2 is {}".format(
-                np.array(all_sisnr2_hats).mean()
-            )
+            f"Mean SISNR hat for source 2 is {np.array(all_sisnr2_hats).mean()}"
         )
 
 
@@ -495,36 +470,31 @@ def dataio_prep(hparams):
     @sb.utils.data_pipeline.takes("mix_wav")
     @sb.utils.data_pipeline.provides("mix_sig")
     def audio_pipeline_mix(mix_wav):
-        mix_sig = sb.dataio.dataio.read_audio(mix_wav)
-        return mix_sig
+        return sb.dataio.dataio.read_audio(mix_wav)
 
     @sb.utils.data_pipeline.takes("s1_wav")
     @sb.utils.data_pipeline.provides("s1_sig")
     def audio_pipeline_s1(s1_wav):
-        s1_sig = sb.dataio.dataio.read_audio(s1_wav)
-        return s1_sig
+        return sb.dataio.dataio.read_audio(s1_wav)
 
     @sb.utils.data_pipeline.takes("s2_wav")
     @sb.utils.data_pipeline.provides("s2_sig")
     def audio_pipeline_s2(s2_wav):
-        s2_sig = sb.dataio.dataio.read_audio(s2_wav)
-        return s2_sig
+        return sb.dataio.dataio.read_audio(s2_wav)
 
     if hparams["num_spks"] == 3:
 
         @sb.utils.data_pipeline.takes("s3_wav")
         @sb.utils.data_pipeline.provides("s3_sig")
         def audio_pipeline_s3(s3_wav):
-            s3_sig = sb.dataio.dataio.read_audio(s3_wav)
-            return s3_sig
+            return sb.dataio.dataio.read_audio(s3_wav)
 
     if hparams["use_wham_noise"]:
 
         @sb.utils.data_pipeline.takes("noise_wav")
         @sb.utils.data_pipeline.provides("noise_sig")
         def audio_pipeline_noise(noise_wav):
-            noise_sig = sb.dataio.dataio.read_audio(noise_wav)
-            return noise_sig
+            return sb.dataio.dataio.read_audio(noise_wav)
 
     sb.dataio.dataset.add_dynamic_item(datasets, audio_pipeline_mix)
     sb.dataio.dataset.add_dynamic_item(datasets, audio_pipeline_s1)
@@ -681,20 +651,15 @@ if __name__ == "__main__":
                             "regex": "**/*.wav",
                         },
                     )
-                    # adjust the base_folder_dm path
-                    hparams["base_folder_dm_whamr"] = (
-                        os.path.normpath(hparams["base_folder_dm_whamr"])
-                        + "_processed"
-                    )
                 else:
                     print(
                         "Using the existing processed folder on the same directory as base_folder_dm"
                     )
-                    hparams["base_folder_dm_whamr"] = (
-                        os.path.normpath(hparams["base_folder_dm_whamr"])
-                        + "_processed"
-                    )
-
+                # adjust the base_folder_dm path
+                hparams["base_folder_dm_whamr"] = (
+                    os.path.normpath(hparams["base_folder_dm_whamr"])
+                    + "_processed"
+                )
             train_data_whamr = dynamic_mix_data_prep_whamr(
                 tr_csv=hparams["train_whamr_data"],
                 data_root_folder=hparams["whamr_data_folder"],
@@ -730,18 +695,14 @@ if __name__ == "__main__":
                         "regex": "**/*.flac",
                     },
                 )
-                # adjust the base_folder_dm path
-                hparams["base_folder_dm"] = (
-                    os.path.normpath(hparams["base_folder_dm"]) + "_processed"
-                )
             else:
                 print(
                     "Using the existing processed folder on the same directory as base_folder_dm"
                 )
-                hparams["base_folder_dm"] = (
-                    os.path.normpath(hparams["base_folder_dm"]) + "_processed"
-                )
-
+            # adjust the base_folder_dm path
+            hparams["base_folder_dm"] = (
+                os.path.normpath(hparams["base_folder_dm"]) + "_processed"
+            )
         train_data = dynamic_mix_data_prep(hparams)
     else:
         train_data, valid_data, test_data = dataio_prep(hparams)
@@ -761,32 +722,36 @@ if __name__ == "__main__":
     all_separators = []
     for separator_model in hparams["separators_to_use"]:
         fetch(
-            separator_model + "_encoder.ckpt",
+            f"{separator_model}_encoder.ckpt",
             source=hparams["separator_repo"],
             savedir=separator_model,
             save_filename="encoder.ckpt",
         )
 
+
         fetch(
-            separator_model + "_decoder.ckpt",
+            f"{separator_model}_decoder.ckpt",
             source=hparams["separator_repo"],
             savedir=separator_model,
             save_filename="decoder.ckpt",
         )
 
+
         fetch(
-            separator_model + "_masknet.ckpt",
+            f"{separator_model}_masknet.ckpt",
             source=hparams["separator_repo"],
             savedir=separator_model,
             save_filename="masknet.ckpt",
         )
 
+
         fetch(
-            separator_model + "_hyperparams.yaml",
+            f"{separator_model}_hyperparams.yaml",
             source=hparams["separator_repo"],
             savedir=separator_model,
             save_filename="hyperparams.yaml",
         )
+
 
         separator_loaded = separator.from_hparams(
             source=separator_model,

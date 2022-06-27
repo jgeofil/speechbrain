@@ -29,7 +29,7 @@ def prepare_musan(folder, music_csv, noise_csv, speech_csv, max_noise_len=None):
             os.path.join(folder, sub_folder), match_and=[".wav"]
         )
         if not os.path.isfile(csv_file):
-            logger.info(csv_file + " creation...")
+            logger.info(f"{csv_file} creation...")
             _prepare_csv(folder, wav_lst, csv_file, max_noise_len)
 
 

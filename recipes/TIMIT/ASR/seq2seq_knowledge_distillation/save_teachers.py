@@ -56,7 +56,6 @@ class ASR(sb.Brain):
         # run inference to each teacher model
         tea_dict_list = []
         for num in range(self.hparams.num_tea):
-            tea_dict = {}
             self.tea_modules_list[num].eval()
             with torch.no_grad():
                 x_tea = tea_enc_list[num](feats)
@@ -92,10 +91,7 @@ class ASR(sb.Brain):
                     compute_alignments=False,
                 )
 
-                wer_ctc_tea = []
-                for item in per_stats_ctc:
-                    wer_ctc_tea.append(item["WER"])
-
+                wer_ctc_tea = [item["WER"] for item in per_stats_ctc]
                 wer_ctc_tea = exclude_wer(wer_ctc_tea)
                 wer_ctc_tea = np.expand_dims(wer_ctc_tea, axis=0)
 
@@ -109,15 +105,11 @@ class ASR(sb.Brain):
                     batch.id, phns_decode, sequence_ce, compute_alignments=False
                 )
 
-                wer_tea = []
-                for item in per_stats_ce:
-                    wer_tea.append(item["WER"])
-
+                wer_tea = [item["WER"] for item in per_stats_ce]
                 wer_tea = exclude_wer(wer_tea)
                 wer_tea = np.expand_dims(wer_tea, axis=0)
 
-            # save the variables into dict
-            tea_dict["p_ctc_tea"] = p_ctc_tea.cpu().numpy()
+            tea_dict = {"p_ctc_tea": p_ctc_tea.cpu().numpy()}
             tea_dict["p_seq_tea"] = p_seq_tea.cpu().numpy()
             tea_dict["wer_ctc_tea"] = wer_ctc_tea
             tea_dict["wer_tea"] = wer_tea
@@ -129,7 +121,7 @@ class ASR(sb.Brain):
         # define teacher variable name
         tea_name = []
         for tea_num in range(self.hparams.num_tea):
-            tea = "t{}".format(tea_num)
+            tea = f"t{tea_num}"
             tea_name.append(tea)
         return tea_name
 
@@ -139,7 +131,7 @@ class ASR(sb.Brain):
         tea_name = self.def_tea_name()
 
         # define output file name
-        f_name = "/tea_infer_{}batch.hdf5".format(self.hparams.batch_size)
+        f_name = f"/tea_infer_{self.hparams.batch_size}batch.hdf5"
         f = h5py.File(self.hparams.output_folder + f_name, "w")
         for num in range(len(stage)):
             # create group for each set (train, valid, test).
@@ -185,8 +177,7 @@ def exclude_wer(wer):
     """
     wer_list = []
     for item in wer:
-        if item > 100:
-            item = 100
+        item = min(item, 100)
         wer_list.append(item)
     return np.array(wer_list)
 
@@ -239,8 +230,7 @@ def data_io_prep(hparams):
     @sb.utils.data_pipeline.takes("wav")
     @sb.utils.data_pipeline.provides("sig")
     def audio_pipeline(wav):
-        sig = sb.dataio.dataio.read_audio(wav)
-        return sig
+        return sb.dataio.dataio.read_audio(wav)
 
     sb.dataio.dataset.add_dynamic_item(datasets, audio_pipeline)
 
@@ -258,16 +248,10 @@ def data_io_prep(hparams):
         yield phn_list
         phn_encoded_list = label_encoder.encode_sequence(phn_list)
         yield phn_encoded_list
-        phn_encoded = torch.LongTensor(phn_encoded_list)
-        yield phn_encoded
-        phn_encoded_eos = torch.LongTensor(
-            label_encoder.append_eos_index(phn_encoded_list)
-        )
-        yield phn_encoded_eos
-        phn_encoded_bos = torch.LongTensor(
-            label_encoder.prepend_bos_index(phn_encoded_list)
-        )
-        yield phn_encoded_bos
+        yield torch.LongTensor(phn_encoded_list)
+        yield torch.LongTensor(label_encoder.append_eos_index(phn_encoded_list))
+
+        yield torch.LongTensor(label_encoder.prepend_bos_index(phn_encoded_list))
 
     sb.dataio.dataset.add_dynamic_item(datasets, text_pipeline)
 
@@ -345,23 +329,22 @@ if __name__ == "__main__":
     tea_ctc_lin_list = []
     tea_seq_lin_list = []
     for i in range(hparams["num_tea"]):
-        exec("tea_enc_list.append(hparams['tea{}_enc'])".format(i))
-        exec("tea_emb_list.append(hparams['tea{}_emb'])".format(i))
-        exec("tea_dec_list.append(hparams['tea{}_dec'])".format(i))
-        exec("tea_ctc_lin_list.append(hparams['tea{}_ctc_lin'])".format(i))
-        exec("tea_seq_lin_list.append(hparams['tea{}_seq_lin'])".format(i))
+        exec(f"tea_enc_list.append(hparams['tea{i}_enc'])")
+        exec(f"tea_emb_list.append(hparams['tea{i}_emb'])")
+        exec(f"tea_dec_list.append(hparams['tea{i}_dec'])")
+        exec(f"tea_ctc_lin_list.append(hparams['tea{i}_ctc_lin'])")
+        exec(f"tea_seq_lin_list.append(hparams['tea{i}_seq_lin'])")
 
     # create ModuleList
     for i in range(hparams["num_tea"]):
         exec(
-            "tea{}_modules = torch.nn.ModuleList([tea_enc_list[i], tea_emb_list[i], tea_dec_list[i], tea_ctc_lin_list[i], tea_seq_lin_list[i]])".format(
-                i
-            )
-        )  # i denotes the index of teacher models
+            f"tea{i}_modules = torch.nn.ModuleList([tea_enc_list[i], tea_emb_list[i], tea_dec_list[i], tea_ctc_lin_list[i], tea_seq_lin_list[i]])"
+        )
+
 
     tea_modules_list = []
     for i in range(hparams["num_tea"]):
-        exec("tea_modules_list.append(tea{}_modules)".format(i))
+        exec(f"tea_modules_list.append(tea{i}_modules)")
 
     # Trainer initialization
     asr_brain = ASR(
@@ -373,11 +356,7 @@ if __name__ == "__main__":
     with open(hparams["tea_models_dir"], "r") as f:
         enter_token = "\n"
         for i, path in enumerate(f.readlines()):
-            exec(
-                "tea{}_modules.load_state_dict(torch.load(path.strip(enter_token)))".format(
-                    i
-                )
-            )
+            exec(f"tea{i}_modules.load_state_dict(torch.load(path.strip(enter_token)))")
 
     # make dataloaders
     train_set = sb.dataio.dataloader.make_dataloader(

@@ -10,8 +10,9 @@ try:
 except ImportError:
     err_msg = (
         "The optional dependency pandas must be installed to run this recipe.\n"
+        + "Install using `pip install pandas`.\n"
     )
-    err_msg += "Install using `pip install pandas`.\n"
+
     raise ImportError(err_msg)
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ def prepare_aishell(data_folder, save_folder, skip_prep=False):
         logger.info("Extracting data_aishell.tgz...")
         shutil.unpack_archive(zip_location, data_folder)
         wav_dir = os.path.join(data_folder, "data_aishell/wav")
-        tgz_list = glob.glob(wav_dir + "/*.tar.gz")
+        tgz_list = glob.glob(f"{wav_dir}/*.tar.gz")
         for tgz in tgz_list:
             shutil.unpack_archive(tgz, wav_dir)
             os.remove(tgz)
@@ -66,10 +67,10 @@ def prepare_aishell(data_folder, save_folder, skip_prep=False):
     ]
     ID_start = 0  # needed to have a unique ID for each audio
     for split in splits:
-        new_filename = os.path.join(save_folder, split) + ".csv"
+        new_filename = f"{os.path.join(save_folder, split)}.csv"
         if os.path.exists(new_filename):
             continue
-        logger.info("Preparing %s..." % new_filename)
+        logger.info(f"Preparing {new_filename}...")
 
         ID = []
         duration = []

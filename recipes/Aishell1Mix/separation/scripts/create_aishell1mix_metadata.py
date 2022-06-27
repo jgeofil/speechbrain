@@ -73,7 +73,7 @@ def main(args):
     md_dir = args.metadata_outdir
     if md_dir is None:
         root = os.path.dirname(aishell1_dir)
-        md_dir = os.path.join(root, f"aishell1mix/metadata")
+        md_dir = os.path.join(root, "aishell1mix/metadata")
     os.makedirs(md_dir, exist_ok=True)
     create_aishell1mix_metadata(
         aishell1_dir, aishell1_md_dir, wham_dir, wham_md_dir, md_dir, n_src
@@ -220,22 +220,13 @@ def set_pairs(aishell1_md_file, wham_md_file, n_src):
     # In train sets utterance are only used once
     if "train" in aishell1_md_file.iloc[0]["subset"]:
         utt_pairs = set_utt_pairs(aishell1_md_file, utt_pairs, n_src)
-        noise_pairs = set_noise_pairs(
-            utt_pairs, noise_pairs, aishell1_md_file, wham_md_file
-        )
-    # Otherwise for dev we want 5000 mixtures
     elif "dev" in aishell1_md_file.iloc[0]["subset"]:
         utt_pairs = set_utt_pairs(aishell1_md_file, utt_pairs, n_src)[:5000]
-        noise_pairs = set_noise_pairs(
-            utt_pairs, noise_pairs, aishell1_md_file, wham_md_file
-        )
-    # Otherwise for test we want 3000 mixtures
     else:
         utt_pairs = set_utt_pairs(aishell1_md_file, utt_pairs, n_src)[:3000]
-        noise_pairs = set_noise_pairs(
-            utt_pairs, noise_pairs, aishell1_md_file, wham_md_file
-        )
-
+    noise_pairs = set_noise_pairs(
+        utt_pairs, noise_pairs, aishell1_md_file, wham_md_file
+    )
     return utt_pairs, noise_pairs
 
 
@@ -249,12 +240,11 @@ def set_utt_pairs(aishell1_md_file, pair_list, n_src):
     while len(index) >= n_src and c < 200:
         couple = random.sample(index, n_src)
         # Check that speakers are different
-        speaker_list = set(
-            [
-                aishell1_md_file.iloc[couple[i]]["speaker_ID"]
-                for i in range(n_src)
-            ]
-        )
+        speaker_list = {
+            aishell1_md_file.iloc[couple[i]]["speaker_ID"]
+            for i in range(n_src)
+        }
+
         # If there are duplicates then increment the counter
         if len(speaker_list) != n_src:
             c += 1

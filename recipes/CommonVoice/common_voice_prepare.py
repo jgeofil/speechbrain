@@ -80,17 +80,17 @@ def prepare_common_voice(
 
     # If not specified point toward standard location w.r.t CommonVoice tree
     if train_tsv_file is None:
-        train_tsv_file = data_folder + "/train.tsv"
+        train_tsv_file = f"{data_folder}/train.tsv"
     else:
         train_tsv_file = train_tsv_file
 
     if dev_tsv_file is None:
-        dev_tsv_file = data_folder + "/dev.tsv"
+        dev_tsv_file = f"{data_folder}/dev.tsv"
     else:
         dev_tsv_file = dev_tsv_file
 
     if test_tsv_file is None:
-        test_tsv_file = data_folder + "/test.tsv"
+        test_tsv_file = f"{data_folder}/test.tsv"
     else:
         test_tsv_file = test_tsv_file
 
@@ -99,20 +99,20 @@ def prepare_common_voice(
         os.makedirs(save_folder)
 
     # Setting ouput files
-    save_csv_train = save_folder + "/train.csv"
-    save_csv_dev = save_folder + "/dev.csv"
-    save_csv_test = save_folder + "/test.csv"
+    save_csv_train = f"{save_folder}/train.csv"
+    save_csv_dev = f"{save_folder}/dev.csv"
+    save_csv_test = f"{save_folder}/test.csv"
 
     # If csv already exists, we skip the data preparation
     if skip(save_csv_train, save_csv_dev, save_csv_test):
 
-        msg = "%s already exists, skipping data preparation!" % (save_csv_train)
+        msg = f"{save_csv_train} already exists, skipping data preparation!"
         logger.info(msg)
 
-        msg = "%s already exists, skipping data preparation!" % (save_csv_dev)
+        msg = f"{save_csv_dev} already exists, skipping data preparation!"
         logger.info(msg)
 
-        msg = "%s already exists, skipping data preparation!" % (save_csv_test)
+        msg = f"{save_csv_test} already exists, skipping data preparation!"
         logger.info(msg)
 
         return
@@ -144,17 +144,13 @@ def skip(save_csv_train, save_csv_dev, save_csv_test):
         if False, it must be done.
     """
 
-    # Checking folders and save options
-    skip = False
-
-    if (
-        os.path.isfile(save_csv_train)
-        and os.path.isfile(save_csv_dev)
-        and os.path.isfile(save_csv_test)
-    ):
-        skip = True
-
-    return skip
+    return bool(
+        (
+            os.path.isfile(save_csv_train)
+            and os.path.isfile(save_csv_dev)
+            and os.path.isfile(save_csv_test)
+        )
+    )
 
 
 def create_csv(
@@ -264,7 +260,7 @@ def create_csv(
                 return len(a) >= 2 and a[0] in "tn" and a[1] in "AEIOUÁÉÍÓÚ"
 
             def galc(w):
-                return w.lower() if not pfxuc(w) else w[0] + "-" + w[1:].lower()
+                return f"{w[0]}-{w[1:].lower()}" if pfxuc(w) else w.lower()
 
             words = re.sub("[^-A-Za-z'ÁÉÍÓÚáéíóú]+", " ", words)
             words = " ".join(map(galc, words.split(" ")))

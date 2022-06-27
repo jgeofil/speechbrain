@@ -66,7 +66,7 @@ class ASR(sb.Brain):
         # define teacher variable name
         tea_name = []
         for tea_num in range(self.hparams.num_tea):
-            tea = "t{}".format(tea_num)
+            tea = f"t{tea_num}"
             tea_name.append(tea)
         return tea_name
 
@@ -122,9 +122,7 @@ class ASR(sb.Brain):
         )
 
         item_tea_list = self.re_format(data_dict)
-        p_ctc_tea, p_seq_tea, wer_ctc_tea, wer_tea = [
-            item for item in item_tea_list
-        ]
+        p_ctc_tea, p_seq_tea, wer_ctc_tea, wer_tea = list(item_tea_list)
 
         # Strategy "average": average losses of teachers when doing distillation.
         # Strategy "best": choosing the best teacher based on WER.
@@ -146,10 +144,7 @@ class ASR(sb.Brain):
 
         apply_softmax = torch.nn.Softmax(dim=0)
 
-        if (
-            self.hparams.strategy == "best"
-            or self.hparams.strategy == "weighted"
-        ):
+        if self.hparams.strategy in ["best", "weighted"]:
             # mean wer for ctc
             tea_wer_ctc_mean = wer_ctc_tea.mean(1)
             tea_acc_main = 100 - tea_wer_ctc_mean
@@ -353,8 +348,7 @@ def data_io_prep(hparams):
     @sb.utils.data_pipeline.takes("wav")
     @sb.utils.data_pipeline.provides("sig")
     def audio_pipeline(wav):
-        sig = sb.dataio.dataio.read_audio(wav)
-        return sig
+        return sb.dataio.dataio.read_audio(wav)
 
     sb.dataio.dataset.add_dynamic_item(datasets, audio_pipeline)
 
@@ -372,16 +366,10 @@ def data_io_prep(hparams):
         yield phn_list
         phn_encoded_list = label_encoder.encode_sequence(phn_list)
         yield phn_encoded_list
-        phn_encoded = torch.LongTensor(phn_encoded_list)
-        yield phn_encoded
-        phn_encoded_eos = torch.LongTensor(
-            label_encoder.append_eos_index(phn_encoded_list)
-        )
-        yield phn_encoded_eos
-        phn_encoded_bos = torch.LongTensor(
-            label_encoder.prepend_bos_index(phn_encoded_list)
-        )
-        yield phn_encoded_bos
+        yield torch.LongTensor(phn_encoded_list)
+        yield torch.LongTensor(label_encoder.append_eos_index(phn_encoded_list))
+
+        yield torch.LongTensor(label_encoder.prepend_bos_index(phn_encoded_list))
 
     sb.dataio.dataset.add_dynamic_item(datasets, text_pipeline)
 
@@ -423,9 +411,11 @@ def load_teachers(hparams):
     Load results of inference of teacher models stored on disk.
     Note: Run experiment_save_teachers.py beforehand to generate .hdf5 files.
     """
-    path = hparams["tea_infer_dir"] + "/tea_infer_{}batch.hdf5".format(
-        hparams["batch_size"]
+    path = (
+        hparams["tea_infer_dir"]
+        + f'/tea_infer_{hparams["batch_size"]}batch.hdf5'
     )
+
     f = h5py.File(path, "r")
     train_dict = f["train"]
     valid_dict = f["valid"]
@@ -442,9 +432,7 @@ def st_load(hparams, asr_brain):
     chpt_path = hparams["pretrain_st_dir"] + "/model.ckpt"
     weight_dict = torch.load(chpt_path)
     # del the decoder layer
-    key_list = []
-    for k in weight_dict.keys():
-        key_list.append(k)
+    key_list = list(weight_dict.keys())
     for k in key_list:
         if not k.startswith("0"):
             del weight_dict[k]
@@ -503,10 +491,8 @@ if __name__ == "__main__":
     asr_brain.valid_dict = valid_dict
     asr_brain.test_dict = test_dict
 
-    if hparams["pretrain"]:
-        # load pre-trained student model except last layer
-        if hparams["epoch_counter"].current == 0:
-            st_load(hparams, asr_brain)
+    if hparams["pretrain"] and hparams["epoch_counter"].current == 0:
+        st_load(hparams, asr_brain)
 
     # Training/validation loop
     asr_brain.fit(

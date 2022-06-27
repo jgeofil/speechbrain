@@ -93,11 +93,7 @@ def prepare_timit(
     match_or = [None, dev_spk, test_spk]
 
     for split, save_file, match in zip(splits, annotations, match_or):
-        if uppercase:
-            match_lst = extension + [split.upper()]
-        else:
-            match_lst = extension + [split]
-
+        match_lst = extension + [split.upper()] if uppercase else extension + [split]
         # List of the wav files
         wav_lst = get_all_files(
             data_folder,
@@ -116,134 +112,137 @@ def _get_phonemes():
 
     # This dictionary is used to conver the 60 phoneme set
     # into the 48 one
-    from_60_to_48_phn = {}
-    from_60_to_48_phn["sil"] = "sil"
-    from_60_to_48_phn["aa"] = "aa"
-    from_60_to_48_phn["ae"] = "ae"
-    from_60_to_48_phn["ah"] = "ah"
-    from_60_to_48_phn["ao"] = "ao"
-    from_60_to_48_phn["aw"] = "aw"
-    from_60_to_48_phn["ax"] = "ax"
-    from_60_to_48_phn["ax-h"] = "ax"
-    from_60_to_48_phn["axr"] = "er"
-    from_60_to_48_phn["ay"] = "ay"
-    from_60_to_48_phn["b"] = "b"
-    from_60_to_48_phn["bcl"] = "vcl"
-    from_60_to_48_phn["ch"] = "ch"
-    from_60_to_48_phn["d"] = "d"
-    from_60_to_48_phn["dcl"] = "vcl"
-    from_60_to_48_phn["dh"] = "dh"
-    from_60_to_48_phn["dx"] = "dx"
-    from_60_to_48_phn["eh"] = "eh"
-    from_60_to_48_phn["el"] = "el"
-    from_60_to_48_phn["em"] = "m"
-    from_60_to_48_phn["en"] = "en"
-    from_60_to_48_phn["eng"] = "ng"
-    from_60_to_48_phn["epi"] = "epi"
-    from_60_to_48_phn["er"] = "er"
-    from_60_to_48_phn["ey"] = "ey"
-    from_60_to_48_phn["f"] = "f"
-    from_60_to_48_phn["g"] = "g"
-    from_60_to_48_phn["gcl"] = "vcl"
-    from_60_to_48_phn["h#"] = "sil"
-    from_60_to_48_phn["hh"] = "hh"
-    from_60_to_48_phn["hv"] = "hh"
-    from_60_to_48_phn["ih"] = "ih"
-    from_60_to_48_phn["ix"] = "ix"
-    from_60_to_48_phn["iy"] = "iy"
-    from_60_to_48_phn["jh"] = "jh"
-    from_60_to_48_phn["k"] = "k"
-    from_60_to_48_phn["kcl"] = "cl"
-    from_60_to_48_phn["l"] = "l"
-    from_60_to_48_phn["m"] = "m"
-    from_60_to_48_phn["n"] = "n"
-    from_60_to_48_phn["ng"] = "ng"
-    from_60_to_48_phn["nx"] = "n"
-    from_60_to_48_phn["ow"] = "ow"
-    from_60_to_48_phn["oy"] = "oy"
-    from_60_to_48_phn["p"] = "p"
-    from_60_to_48_phn["pau"] = "sil"
-    from_60_to_48_phn["pcl"] = "cl"
-    from_60_to_48_phn["q"] = ""
-    from_60_to_48_phn["r"] = "r"
-    from_60_to_48_phn["s"] = "s"
-    from_60_to_48_phn["sh"] = "sh"
-    from_60_to_48_phn["t"] = "t"
-    from_60_to_48_phn["tcl"] = "cl"
-    from_60_to_48_phn["th"] = "th"
-    from_60_to_48_phn["uh"] = "uh"
-    from_60_to_48_phn["uw"] = "uw"
-    from_60_to_48_phn["ux"] = "uw"
-    from_60_to_48_phn["v"] = "v"
-    from_60_to_48_phn["w"] = "w"
-    from_60_to_48_phn["y"] = "y"
-    from_60_to_48_phn["z"] = "z"
-    from_60_to_48_phn["zh"] = "zh"
+    from_60_to_48_phn = {
+        "sil": "sil",
+        "aa": "aa",
+        "ae": "ae",
+        "ah": "ah",
+        "ao": "ao",
+        "aw": "aw",
+        "ax": "ax",
+        "ax-h": "ax",
+        "axr": "er",
+        "ay": "ay",
+        "b": "b",
+        "bcl": "vcl",
+        "ch": "ch",
+        "d": "d",
+        "dcl": "vcl",
+        "dh": "dh",
+        "dx": "dx",
+        "eh": "eh",
+        "el": "el",
+        "em": "m",
+        "en": "en",
+        "eng": "ng",
+        "epi": "epi",
+        "er": "er",
+        "ey": "ey",
+        "f": "f",
+        "g": "g",
+        "gcl": "vcl",
+        "h#": "sil",
+        "hh": "hh",
+        "hv": "hh",
+        "ih": "ih",
+        "ix": "ix",
+        "iy": "iy",
+        "jh": "jh",
+        "k": "k",
+        "kcl": "cl",
+        "l": "l",
+        "m": "m",
+        "n": "n",
+        "ng": "ng",
+        "nx": "n",
+        "ow": "ow",
+        "oy": "oy",
+        "p": "p",
+        "pau": "sil",
+        "pcl": "cl",
+        "q": "",
+        "r": "r",
+        "s": "s",
+        "sh": "sh",
+        "t": "t",
+        "tcl": "cl",
+        "th": "th",
+        "uh": "uh",
+        "uw": "uw",
+        "ux": "uw",
+        "v": "v",
+        "w": "w",
+        "y": "y",
+        "z": "z",
+        "zh": "zh",
+    }
 
     # This dictionary is used to conver the 60 phoneme set
-    from_60_to_39_phn = {}
-    from_60_to_39_phn["sil"] = "sil"
-    from_60_to_39_phn["aa"] = "aa"
-    from_60_to_39_phn["ae"] = "ae"
-    from_60_to_39_phn["ah"] = "ah"
-    from_60_to_39_phn["ao"] = "aa"
-    from_60_to_39_phn["aw"] = "aw"
-    from_60_to_39_phn["ax"] = "ah"
-    from_60_to_39_phn["ax-h"] = "ah"
-    from_60_to_39_phn["axr"] = "er"
-    from_60_to_39_phn["ay"] = "ay"
-    from_60_to_39_phn["b"] = "b"
-    from_60_to_39_phn["bcl"] = "sil"
-    from_60_to_39_phn["ch"] = "ch"
-    from_60_to_39_phn["d"] = "d"
-    from_60_to_39_phn["dcl"] = "sil"
-    from_60_to_39_phn["dh"] = "dh"
-    from_60_to_39_phn["dx"] = "dx"
-    from_60_to_39_phn["eh"] = "eh"
-    from_60_to_39_phn["el"] = "l"
-    from_60_to_39_phn["em"] = "m"
-    from_60_to_39_phn["en"] = "n"
-    from_60_to_39_phn["eng"] = "ng"
-    from_60_to_39_phn["epi"] = "sil"
-    from_60_to_39_phn["er"] = "er"
-    from_60_to_39_phn["ey"] = "ey"
-    from_60_to_39_phn["f"] = "f"
-    from_60_to_39_phn["g"] = "g"
-    from_60_to_39_phn["gcl"] = "sil"
-    from_60_to_39_phn["h#"] = "sil"
-    from_60_to_39_phn["hh"] = "hh"
-    from_60_to_39_phn["hv"] = "hh"
-    from_60_to_39_phn["ih"] = "ih"
-    from_60_to_39_phn["ix"] = "ih"
-    from_60_to_39_phn["iy"] = "iy"
-    from_60_to_39_phn["jh"] = "jh"
-    from_60_to_39_phn["k"] = "k"
-    from_60_to_39_phn["kcl"] = "sil"
-    from_60_to_39_phn["l"] = "l"
-    from_60_to_39_phn["m"] = "m"
-    from_60_to_39_phn["ng"] = "ng"
-    from_60_to_39_phn["n"] = "n"
-    from_60_to_39_phn["nx"] = "n"
-    from_60_to_39_phn["ow"] = "ow"
-    from_60_to_39_phn["oy"] = "oy"
-    from_60_to_39_phn["p"] = "p"
-    from_60_to_39_phn["pau"] = "sil"
-    from_60_to_39_phn["pcl"] = "sil"
-    from_60_to_39_phn["q"] = ""
-    from_60_to_39_phn["r"] = "r"
-    from_60_to_39_phn["s"] = "s"
-    from_60_to_39_phn["sh"] = "sh"
-    from_60_to_39_phn["t"] = "t"
-    from_60_to_39_phn["tcl"] = "sil"
-    from_60_to_39_phn["th"] = "th"
-    from_60_to_39_phn["uh"] = "uh"
-    from_60_to_39_phn["uw"] = "uw"
-    from_60_to_39_phn["ux"] = "uw"
-    from_60_to_39_phn["v"] = "v"
-    from_60_to_39_phn["w"] = "w"
-    from_60_to_39_phn["y"] = "y"
-    from_60_to_39_phn["z"] = "z"
-    from_60_to_39_phn["zh"] = "sh"
+    from_60_to_39_phn = {
+        "sil": "sil",
+        "aa": "aa",
+        "ae": "ae",
+        "ah": "ah",
+        "ao": "aa",
+        "aw": "aw",
+        "ax": "ah",
+        "ax-h": "ah",
+        "axr": "er",
+        "ay": "ay",
+        "b": "b",
+        "bcl": "sil",
+        "ch": "ch",
+        "d": "d",
+        "dcl": "sil",
+        "dh": "dh",
+        "dx": "dx",
+        "eh": "eh",
+        "el": "l",
+        "em": "m",
+        "en": "n",
+        "eng": "ng",
+        "epi": "sil",
+        "er": "er",
+        "ey": "ey",
+        "f": "f",
+        "g": "g",
+        "gcl": "sil",
+        "h#": "sil",
+        "hh": "hh",
+        "hv": "hh",
+        "ih": "ih",
+        "ix": "ih",
+        "iy": "iy",
+        "jh": "jh",
+        "k": "k",
+        "kcl": "sil",
+        "l": "l",
+        "m": "m",
+        "ng": "ng",
+        "n": "n",
+        "nx": "n",
+        "ow": "ow",
+        "oy": "oy",
+        "p": "p",
+        "pau": "sil",
+        "pcl": "sil",
+        "q": "",
+        "r": "r",
+        "s": "s",
+        "sh": "sh",
+        "t": "t",
+        "tcl": "sil",
+        "th": "th",
+        "uh": "uh",
+        "uw": "uw",
+        "ux": "uw",
+        "v": "v",
+        "w": "w",
+        "y": "y",
+        "z": "z",
+        "zh": "sh",
+    }
+
 
     return from_60_to_48_phn, from_60_to_39_phn
 
@@ -346,14 +345,7 @@ def skip(annotations):
         if True, the preparation phase can be skipped.
         if False, it must be done.
     """
-    skip = True
-
-    for annotation in annotations:
-        if not os.path.isfile(annotation):
-            skip = False
-            break
-
-    return skip
+    return all(os.path.isfile(annotation) for annotation in annotations)
 
 
 def create_json(
@@ -376,7 +368,7 @@ def create_json(
     """
 
     # Adding some Prints
-    msg = "Creating %s..." % (json_file)
+    msg = f"Creating {json_file}..."
     logger.info(msg)
     json_dict = {}
 
@@ -385,7 +377,7 @@ def create_json(
         # Getting sentence and speaker ids
         spk_id = wav_file.split("/")[-2]
         snt_id = wav_file.split("/")[-1].replace(".wav", "")
-        snt_id = spk_id + "_" + snt_id
+        snt_id = f"{spk_id}_{snt_id}"
 
         # Reading the signal (to retrieve duration in seconds)
         signal = read_audio(wav_file)
@@ -398,7 +390,7 @@ def create_json(
             wrd_file = wav_file.replace(".wav", ".wrd")
 
         if not os.path.exists(os.path.dirname(wrd_file)):
-            err_msg = "the wrd file %s does not exists!" % (wrd_file)
+            err_msg = f"the wrd file {wrd_file} does not exists!"
             raise FileNotFoundError(err_msg)
 
         words = [line.rstrip("\n").split(" ")[2] for line in open(wrd_file)]
@@ -411,7 +403,7 @@ def create_json(
             phn_file = wav_file.replace(".wav", ".phn")
 
         if not os.path.exists(os.path.dirname(phn_file)):
-            err_msg = "the wrd file %s does not exists!" % (phn_file)
+            err_msg = f"the wrd file {phn_file} does not exists!"
             raise FileNotFoundError(err_msg)
 
         # Getting the phoneme and ground truth ends lists from the phn files
@@ -448,9 +440,8 @@ def get_phoneme_lists(phn_file, phn_set):
         from_60_to_48_phn, from_60_to_39_phn = _get_phonemes()
 
         # Removing end corresponding to q if phn set is not 61
-        if phn_set != 60:
-            if phoneme == "q":
-                end = ""
+        if phn_set != 60 and phoneme == "q":
+            end = ""
 
         # Converting phns if necessary
         if phn_set == 48:
@@ -478,15 +469,14 @@ def get_phoneme_lists(phn_file, phn_set):
         # phonemes ["a", "sil", "b"]
         # ends     [  1,     4,   5]
 
-        remove_sil_mask = [True if x == "sil" else False for x in phonemes]
+        remove_sil_mask = [x == "sil" for x in phonemes]
 
         for i, val in enumerate(remove_sil_mask):
-            if val is True:
-                if i == len(remove_sil_mask) - 1:
-                    remove_sil_mask[i] = False
-                elif remove_sil_mask[i + 1] is False:
-                    remove_sil_mask[i] = False
-
+            if val is True and (
+                i == len(remove_sil_mask) - 1
+                or remove_sil_mask[i + 1] is False
+            ):
+                remove_sil_mask[i] = False
         phonemes = [
             phon for i, phon in enumerate(phonemes) if not remove_sil_mask[i]
         ]

@@ -27,7 +27,7 @@ def prepare_commonlanguage(folder, csv_file, max_noise_len=None):
     logger.info("CommonLanguage Preparation...")
     wav_lst = get_all_files(os.path.join(folder), match_and=[".wav"])
     if not os.path.isfile(csv_file):
-        logger.info(csv_file + " creation...")
+        logger.info(f"{csv_file} creation...")
         _prepare_csv(folder, wav_lst, csv_file, max_noise_len)
 
 

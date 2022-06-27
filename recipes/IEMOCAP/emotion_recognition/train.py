@@ -35,9 +35,7 @@ class EmoIdBrain(sb.Brain):
 
         # Embeddings + speaker classifier
         embeddings = self.modules.embedding_model(feats, lens)
-        outputs = self.modules.classifier(embeddings)
-
-        return outputs
+        return self.modules.classifier(embeddings)
 
     def fit_batch(self, batch):
         """Trains the parameters given a single batch in input"""
@@ -63,10 +61,10 @@ class EmoIdBrain(sb.Brain):
         emoid, _ = batch.emo_encoded
 
         # Concatenate labels (due to data augmentation)
-        if stage == sb.Stage.TRAIN:
-
-            if hasattr(self.hparams.lr_annealing, "on_batch_end"):
-                self.hparams.lr_annealing.on_batch_end(self.optimizer)
+        if stage == sb.Stage.TRAIN and hasattr(
+            self.hparams.lr_annealing, "on_batch_end"
+        ):
+            self.hparams.lr_annealing.on_batch_end(self.optimizer)
 
         loss = self.hparams.compute_cost(predictions, emoid, lens)
 
@@ -251,8 +249,7 @@ def dataio_prep(hparams):
     def audio_pipeline(wav):
         """Load the signal, and pass it and its length to the corruption class.
         This is done on the CPU in the `collate_fn`."""
-        sig = sb.dataio.dataio.read_audio(wav)
-        return sig
+        return sb.dataio.dataio.read_audio(wav)
 
     # Initialization of the label encoder. The label encoder assignes to each
     # of the observed label a unique index (e.g, 'spk01': 0, 'spk02': 1, ..)
@@ -263,8 +260,7 @@ def dataio_prep(hparams):
     @sb.utils.data_pipeline.provides("emo", "emo_encoded")
     def label_pipeline(emo):
         yield emo
-        emo_encoded = label_encoder.encode_label_torch(emo)
-        yield emo_encoded
+        yield label_encoder.encode_label_torch(emo)
 
     # Define datasets. We also connect the dataset with the data processing
     # functions defined above.

@@ -89,13 +89,12 @@ class ASR(sb.Brain):
         # Compute outputs
         if stage == sb.Stage.TRAIN:
             current_epoch = self.hparams.epoch_counter.current
-            if current_epoch <= self.hparams.number_of_ctc_epochs:
-                # Output layer for ctc log-probabilities
-                logits = self.modules.ctc_lin(x)
-                p_ctc = self.hparams.log_softmax(logits)
-                return p_ctc, p_seq, wav_lens
-            else:
+            if current_epoch > self.hparams.number_of_ctc_epochs:
                 return p_seq, wav_lens
+            # Output layer for ctc log-probabilities
+            logits = self.modules.ctc_lin(x)
+            p_ctc = self.hparams.log_softmax(logits)
+            return p_ctc, p_seq, wav_lens
         else:
             if stage == sb.Stage.VALID:
                 p_tokens, scores = self.hparams.valid_search(x, wav_lens)
@@ -266,8 +265,7 @@ def dataio_prepare(hparams):
     @sb.utils.data_pipeline.takes("wav")
     @sb.utils.data_pipeline.provides("sig")
     def audio_pipeline(wav):
-        sig = sb.dataio.dataio.read_audio(wav)
-        return sig
+        return sb.dataio.dataio.read_audio(wav)
 
     sb.dataio.dataset.add_dynamic_item(datasets, audio_pipeline)
 
@@ -280,12 +278,9 @@ def dataio_prepare(hparams):
         yield wrd
         tokens_list = tokenizer.encode_as_ids(wrd)
         yield tokens_list
-        tokens_bos = torch.LongTensor([hparams["bos_index"]] + (tokens_list))
-        yield tokens_bos
-        tokens_eos = torch.LongTensor(tokens_list + [hparams["eos_index"]])
-        yield tokens_eos
-        tokens = torch.LongTensor(tokens_list)
-        yield tokens
+        yield torch.LongTensor([hparams["bos_index"]] + (tokens_list))
+        yield torch.LongTensor(tokens_list + [hparams["eos_index"]])
+        yield torch.LongTensor(tokens_list)
 
     sb.dataio.dataset.add_dynamic_item(datasets, text_pipeline)
 
@@ -415,8 +410,9 @@ if __name__ == "__main__":
     # Testing
     for k in test_datasets.keys():  # keys are test_clean, test_other etc
         asr_brain.hparams.wer_file = os.path.join(
-            hparams["output_folder"], "wer_{}.txt".format(k)
+            hparams["output_folder"], f"wer_{k}.txt"
         )
+
         asr_brain.evaluate(
             test_datasets[k], test_loader_kwargs=hparams["test_dataloader_opts"]
         )

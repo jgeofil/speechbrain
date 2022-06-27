@@ -259,12 +259,10 @@ class ST(sb.core.Brain):
             if current_epoch <= self.hparams.stage_one_epochs:
                 lr = self.hparams.noam_annealing.current_lr
                 steps = self.hparams.noam_annealing.n_steps
-                optimizer = self.optimizer.__class__.__name__
             else:
                 lr = self.hparams.lr_sgd
                 steps = -1
-                optimizer = self.optimizer.__class__.__name__
-
+            optimizer = self.optimizer.__class__.__name__
             epoch_stats = {
                 "epoch": epoch,
                 "lr": lr,
@@ -325,8 +323,8 @@ class ST(sb.core.Brain):
 
         # if the model is resumed from stage two, reinitialize the optimizer
         current_epoch = self.hparams.epoch_counter.current
-        current_optimizer = self.optimizer
         if current_epoch > self.hparams.stage_one_epochs:
+            current_optimizer = self.optimizer
             del self.optimizer
             self.optimizer = self.hparams.SGD(self.modules.parameters())
 
@@ -367,8 +365,7 @@ def dataio_prepare(hparams):
     @sb.utils.data_pipeline.provides("sig")
     def audio_pipeline(wav):
         """Load the audio signal. This is done on the CPU in the `collate_fn`."""
-        sig = sb.dataio.dataio.read_audio(wav)
-        return sig
+        return sb.dataio.dataio.read_audio(wav)
 
     @sb.utils.data_pipeline.takes("wav")
     @sb.utils.data_pipeline.provides("sig")
@@ -393,12 +390,9 @@ def dataio_prepare(hparams):
         yield translation
         tokens_list = hparams["tokenizer"].encode_as_ids(translation)
         yield tokens_list
-        tokens_bos = torch.LongTensor([hparams["bos_index"]] + (tokens_list))
-        yield tokens_bos
-        tokens_eos = torch.LongTensor(tokens_list + [hparams["eos_index"]])
-        yield tokens_eos
-        tokens = torch.LongTensor(tokens_list)
-        yield tokens
+        yield torch.LongTensor([hparams["bos_index"]] + (tokens_list))
+        yield torch.LongTensor(tokens_list + [hparams["eos_index"]])
+        yield torch.LongTensor(tokens_list)
 
     @sb.utils.data_pipeline.takes(
         "translation_0", "translation_1", "translation_2", "translation_3",
@@ -421,12 +415,9 @@ def dataio_prepare(hparams):
         yield translations[3]
         tokens_list = hparams["tokenizer"].encode_as_ids(translations[0])
         yield tokens_list
-        tokens_bos = torch.LongTensor([hparams["bos_index"]] + (tokens_list))
-        yield tokens_bos
-        tokens_eos = torch.LongTensor(tokens_list + [hparams["eos_index"]])
-        yield tokens_eos
-        tokens = torch.LongTensor(tokens_list)
-        yield tokens
+        yield torch.LongTensor([hparams["bos_index"]] + (tokens_list))
+        yield torch.LongTensor(tokens_list + [hparams["eos_index"]])
+        yield torch.LongTensor(tokens_list)
 
     @sb.utils.data_pipeline.takes("transcription")
     @sb.utils.data_pipeline.provides(
@@ -440,12 +431,9 @@ def dataio_prepare(hparams):
         yield transcription
         tokens_list = hparams["tokenizer"].encode_as_ids(transcription)
         yield tokens_list
-        tokens_bos = torch.LongTensor([hparams["bos_index"]] + (tokens_list))
-        yield tokens_bos
-        tokens_eos = torch.LongTensor(tokens_list + [hparams["eos_index"]])
-        yield tokens_eos
-        tokens = torch.LongTensor(tokens_list)
-        yield tokens
+        yield torch.LongTensor([hparams["bos_index"]] + (tokens_list))
+        yield torch.LongTensor(tokens_list + [hparams["eos_index"]])
+        yield torch.LongTensor(tokens_list)
 
     datasets = {}
     data_folder = hparams["data_folder"]

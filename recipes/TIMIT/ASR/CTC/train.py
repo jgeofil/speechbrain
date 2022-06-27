@@ -162,8 +162,7 @@ def dataio_prep(hparams):
     @sb.utils.data_pipeline.takes("wav")
     @sb.utils.data_pipeline.provides("sig")
     def audio_pipeline(wav):
-        sig = sb.dataio.dataio.read_audio(wav)
-        return sig
+        return sb.dataio.dataio.read_audio(wav)
 
     sb.dataio.dataset.add_dynamic_item(datasets, audio_pipeline)
 
@@ -173,8 +172,7 @@ def dataio_prep(hparams):
     def text_pipeline(phn):
         phn_list = phn.strip().split()
         yield phn_list
-        phn_encoded = label_encoder.encode_sequence_torch(phn_list)
-        yield phn_encoded
+        yield label_encoder.encode_sequence_torch(phn_list)
 
     sb.dataio.dataset.add_dynamic_item(datasets, text_pipeline)
 

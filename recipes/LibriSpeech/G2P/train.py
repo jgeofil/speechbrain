@@ -165,12 +165,11 @@ class G2PBrain(sb.Brain):
                     "attempting to recover any checkpoint",
                     step,
                 )
-                result = self.checkpointer.recover_if_possible(
+                if result := self.checkpointer.recover_if_possible(
                     device=torch.device(self.device),
                     min_key=min_key,
                     max_key=max_key,
-                )
-                if result:
+                ):
                     logger.info(
                         "Recovered checkpoint with metadata %s", result.meta
                     )
@@ -529,9 +528,8 @@ class G2PBrain(sb.Brain):
                     min_keys=min_keys,
                     ckpt_predicate=ckpt_predicate,
                 )
-            if self.hparams.enable_interim_reports:
-                if self.hparams.enable_metrics:
-                    self._write_reports(epoch, final=False)
+            if self.hparams.enable_interim_reports and self.hparams.enable_metrics:
+                self._write_reports(epoch, final=False)
 
             if self.epoch_counter.should_stop(
                 current=epoch, current_metric=per,
@@ -805,16 +803,12 @@ def sort_data(data, hparams, train_step):
     elif hparams["sorting"] == "descending":
         data = data.filtered_sorted(sort_key="duration", reverse=True)
 
-    elif hparams["sorting"] == "random":
-        pass
-
-    else:
+    elif hparams["sorting"] != "random":
         raise NotImplementedError(
             "sorting must be random, ascending or descending"
         )
 
-    sample = train_step.get("sample")
-    if sample:
+    if sample := train_step.get("sample"):
         sample_ids = list(data.data_ids)
         if train_step.get("sample_random"):
             random.shuffle(sample_ids)
@@ -883,14 +877,13 @@ def load_datasets(hparams, train_step):
         hparams["dataset"], cache_dir=hparams["data_folder"]
     )
     train_step_name = train_step.get("name", "sentence")
-    results = [
+    return [
         DynamicItemDataset.from_arrow_dataset(
             dataset[f"{train_step_name}_{key}"],
             replacements={"data_root": data_folder},
         )
         for key in DATASET_SPLITS
     ]
-    return results
 
 
 # TODO: Split this up into smaller functions
@@ -927,17 +920,11 @@ def dataio_prep(hparams, train_step=None):
     # 1. Load the datasets:
     train_data, valid_data, test_data = load_datasets(hparams, train_step)
 
-    if hparams["sorting"] == "ascending":
+    if hparams["sorting"] in ["ascending", "descending"]:
         # when sorting do not shuffle in dataloader ! otherwise is pointless
         hparams["dataloader_opts"]["shuffle"] = False
 
-    elif hparams["sorting"] == "descending":
-        hparams["dataloader_opts"]["shuffle"] = False
-
-    elif hparams["sorting"] == "random":
-        pass
-
-    else:
+    elif hparams["sorting"] != "random":
         raise NotImplementedError(
             "sorting must be random, ascending or descending"
         )
@@ -1092,8 +1079,7 @@ def dataio_prep(hparams, train_step=None):
         datasets = [filter_origins(dataset, hparams) for dataset in datasets]
         train_data, valid_data, test_data = datasets
 
-    sample = hparams.get("sample")
-    if sample:
+    if sample := hparams.get("sample"):
         datasets = [filter_origins(dataset, hparams) for dataset in datasets]
     train_data, valid_data, test_data = datasets
     return train_data, valid_data, test_data, phoneme_encoder
@@ -1109,8 +1095,7 @@ def load_dependencies(hparams, run_opts):
     run_opts: dict
         run options
     """
-    deps_pretrainer = hparams.get("deps_pretrainer")
-    if deps_pretrainer:
+    if deps_pretrainer := hparams.get("deps_pretrainer"):
         run_on_main(deps_pretrainer.collect_files)
         deps_pretrainer.load_collected(device=run_opts["device"])
 
