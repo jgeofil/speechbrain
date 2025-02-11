@@ -7,4 +7,4 @@ six
 sklearn
 sphinx-rtd-theme>=0.4.3
 Sphinx>=3.4.3
-transformers==4.13
+transformers==4.48.0
